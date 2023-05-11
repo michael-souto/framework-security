@@ -3,6 +3,7 @@ package com.detrasoft.framework.security.config;
 
 import com.detrasoft.framework.security.utils.AuthorizationFileProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,8 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
     private JwtTokenStore tokenStore;
     @Autowired
     private Environment env;
+    @Value("${cors.allowed.origin}")
+    private String allowedOrigin;
 
     @Override
     public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
@@ -56,7 +59,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOriginPatterns(List.of("https://detrasoft.com.br"));
+        corsConfiguration.setAllowedOriginPatterns(Arrays.stream(allowedOrigin.split(";")).toList());
         corsConfiguration.setAllowedMethods(List.of("POST", "GET", "PUT", "DELETE", "PATCH"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedHeaders(List.of("Authorization", "Content-type", "Accept-Language"));
