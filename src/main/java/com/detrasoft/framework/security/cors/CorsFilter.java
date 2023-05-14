@@ -1,23 +1,17 @@
 package com.detrasoft.framework.security.cors;
 
 
-
-import java.io.IOException;
-import java.util.Collection;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -26,7 +20,7 @@ public class CorsFilter implements Filter {
     @Value("${cors.allowed.origin:*}")
     private String allowedOrigin;
 
-    @Value("${security.https:true}")
+    @Value("${authorization.security-https:true}")
     private Boolean securityHttps;
 
     @Override
@@ -34,21 +28,24 @@ public class CorsFilter implements Filter {
             throws IOException, ServletException {
 
         String protocol = securityHttps ? "https://" : "http://";
-        String origin = protocol + allowedOrigin;
-        String wwwOrigin = protocol + "www." + allowedOrigin;
-
+        var origins = Arrays.stream(allowedOrigin.split(";")).map(x-> x = protocol + x).toList();
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
 
-        response.setHeader("Access-Control-Allow-Origin", request.getHeader("Origin"));
+        String AccessControlAllowOrigin = allowedOrigin.equals("*")
+                ? "*"
+                : (request.getHeader("Origin") != null && origins.lastIndexOf(request.getHeader("Origin")) >= 0
+                    ? origins.get(origins.lastIndexOf(request.getHeader("Origin")))
+                    : null);
+
+        response.setHeader("Access-Control-Allow-Origin", AccessControlAllowOrigin);
         response.setHeader("Access-Control-Allow-Credentials", "true");
         addSameSiteAttribute(response);
 
         if ("OPTIONS".equals(request.getMethod())
-                && (origin.equals(request.getHeader("Origin"))
-                || (wwwOrigin.equals(request.getHeader("Origin"))
-                || allowedOrigin.equals("*")))) {
-            response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, OPTIONS");
+                && (origins.lastIndexOf(request.getHeader("Origin")) >= 0
+                || allowedOrigin.equals("*"))) {
+            response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, PATCH, OPTIONS");
             response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
             response.setHeader("Access-Control-Max-Age", "3600");
 
