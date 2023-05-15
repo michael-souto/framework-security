@@ -17,6 +17,9 @@ import java.util.Collection;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorsFilter implements Filter {
 
+    @Value("${authorization.enable-origin-control}")
+    private Boolean enableOriginControl;
+
     @Value("${cors.allowed.origin:*}")
     private String allowedOrigin;
 
@@ -27,33 +30,36 @@ public class CorsFilter implements Filter {
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
             throws IOException, ServletException {
 
-        String protocol = securityHttps ? "https://" : "http://";
-        var origins = Arrays.stream(allowedOrigin.split(";")).map(x-> x = protocol + x).toList();
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) resp;
+        if (enableOriginControl) {
+            String protocol = securityHttps ? "https://" : "http://";
+            var origins = Arrays.stream(allowedOrigin.split(";")).map(x -> x = protocol + x).toList();
+            HttpServletRequest request = (HttpServletRequest) req;
+            HttpServletResponse response = (HttpServletResponse) resp;
 
-        String AccessControlAllowOrigin = allowedOrigin.equals("*")
-                ? "*"
-                : (request.getHeader("Origin") != null && origins.lastIndexOf(request.getHeader("Origin")) >= 0
+            String AccessControlAllowOrigin = allowedOrigin.equals("*")
+                    ? "*"
+                    : (request.getHeader("Origin") != null && origins.lastIndexOf(request.getHeader("Origin")) >= 0
                     ? origins.get(origins.lastIndexOf(request.getHeader("Origin")))
                     : null);
 
-        response.setHeader("Access-Control-Allow-Origin", AccessControlAllowOrigin);
-        response.setHeader("Access-Control-Allow-Credentials", "true");
-        addSameSiteAttribute(response);
+            response.setHeader("Access-Control-Allow-Origin", AccessControlAllowOrigin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+            addSameSiteAttribute(response);
 
-        if ("OPTIONS".equals(request.getMethod())
-                && (origins.lastIndexOf(request.getHeader("Origin")) >= 0
-                || allowedOrigin.equals("*"))) {
-            response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, PATCH, OPTIONS");
-            response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
-            response.setHeader("Access-Control-Max-Age", "3600");
+            if ("OPTIONS".equals(request.getMethod())
+                    && (origins.lastIndexOf(request.getHeader("Origin")) >= 0
+                    || allowedOrigin.equals("*"))) {
+                response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, PATCH, OPTIONS");
+                response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
+                response.setHeader("Access-Control-Max-Age", "3600");
 
-            response.setStatus(HttpServletResponse.SC_OK);
+                response.setStatus(HttpServletResponse.SC_OK);
+            } else {
+                chain.doFilter(req, resp);
+            }
         } else {
             chain.doFilter(req, resp);
         }
-
     }
 
     @Override
