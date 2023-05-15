@@ -17,13 +17,13 @@ import java.util.Collection;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorsFilter implements Filter {
 
-    @Value("${authorization.enable-origin-control}")
+    @Value("${authorization.enable-origin-control:false}")
     private Boolean enableOriginControl;
 
     @Value("${cors.allowed.origin:*}")
     private String allowedOrigin;
 
-    @Value("${authorization.security-https:true}")
+    @Value("${authorization.security-https:false}")
     private Boolean securityHttps;
 
     @Override
