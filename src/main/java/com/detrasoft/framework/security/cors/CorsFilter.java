@@ -50,7 +50,7 @@ public class CorsFilter implements Filter {
                     && (origins.lastIndexOf(request.getHeader("Origin")) >= 0
                     || allowedOrigin.equals("*"))) {
                 response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, PATCH, OPTIONS");
-                response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept");
+                response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, Device-Id");
                 response.setHeader("Access-Control-Max-Age", "3600");
 
                 response.setStatus(HttpServletResponse.SC_OK);
