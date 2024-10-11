@@ -6,10 +6,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import javax.persistence.Embedded;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import java.time.Instant;
 
 @MappedSuperclass
@@ -25,6 +25,8 @@ public abstract class AuditedGenericEntity extends GenericEntity {
         audit.setCreatedAt(Instant.now());
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             audit.setUserCreated(SecurityContextHolder.getContext().getAuthentication().getName());
+        } else {
+            audit.setUserCreated("anonymousUser");
         }
     }
 

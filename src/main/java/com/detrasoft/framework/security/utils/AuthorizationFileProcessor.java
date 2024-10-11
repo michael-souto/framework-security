@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,55 +22,67 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.stream.Stream;
-
+import java.util.Arrays;
+@Component
 public class AuthorizationFileProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthorizationFileProcessor.class);
 
-    public void configureAuthoritiesFileConfig(HttpSecurity http) {
+    public void configureAuthoritiesFileConfig(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         try {
             for (String directory : getResourceFolderFiles()) {
-
+    
                 Properties props = new Properties();
                 URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-
-                InputStream input = null;
-
+    
+                InputStream input;
+    
                 if (uri.getScheme().equals("jar")) {
                     input = this.getClass().getResourceAsStream(directory);
                 } else {
                     input = new FileInputStream(directory);
                 }
-
+    
                 props.load(input);
-
-                for (Object object : props.keySet()) {
-                    String controllerMapping = object.toString().substring(0, object.toString().indexOf("*"));
-
-                    String verbHttp = object.toString().substring(object.toString().indexOf("*") + 1,
-                            object.toString().length());
-
-                    String access = props.getProperty(object.toString());
-
-                    switch (verbHttp) {
-                        case "post" ->
-                                http.authorizeRequests().antMatchers(HttpMethod.POST, "/" + controllerMapping)
-                                        .access(access);
-                        case "put" ->
-                                http.authorizeRequests().antMatchers(HttpMethod.PUT, "/" + controllerMapping)
-                                        .access(access);
-                        case "delete" ->
-                                http.authorizeRequests().antMatchers(HttpMethod.DELETE, "/" + controllerMapping)
-                                        .access(access);
-                        case "get" ->
-                                http.authorizeRequests().antMatchers(HttpMethod.GET, "/" + controllerMapping)
-                                        .access(access);
-                        default -> http.authorizeRequests().antMatchers("/" + controllerMapping + "/").access(access);
+    
+                for (String key : props.stringPropertyNames()) {
+                    String[] keyParts = key.split("\\@");
+                    if (keyParts.length != 2) {
+                        logger.warn("Formato de chave inválido: {}", key);
+                        continue;
                     }
-                    logger.info("Permission added [" + verbHttp + "] /" + controllerMapping);
+                    String controllerMapping = keyParts[0];
+                    String verbHttp = keyParts[1].toLowerCase();
+    
+                    String authoritiesString = props.getProperty(key).trim();
+                    // Remove aspas simples e divide por vírgula
+                    String[] authorities = authoritiesString.replaceAll("'", "").split("\\s*,\\s*");
+    
+                    // Construir o padrão de URL
+                    String urlPattern = "/" + controllerMapping;
+    
+                    // Adicionar a autorização com base no método HTTP
+                    switch (verbHttp) {
+                        case "post" -> authz
+                            .requestMatchers(HttpMethod.POST, urlPattern)
+                            .hasAnyAuthority(authorities);
+                        case "put" -> authz
+                            .requestMatchers(HttpMethod.PUT, urlPattern)
+                            .hasAnyAuthority(authorities);
+                        case "delete" -> authz
+                            .requestMatchers(HttpMethod.DELETE, urlPattern)
+                            .hasAnyAuthority(authorities);
+                        case "get" -> authz
+                            .requestMatchers(HttpMethod.GET, urlPattern)
+                            .hasAnyAuthority(authorities);
+                        default -> authz
+                            .requestMatchers(urlPattern)
+                            .hasAnyAuthority(authorities);
+                    }
+                    logger.info("Permissão adicionada [{}] {} com autoridades {}", verbHttp.toUpperCase(), urlPattern, Arrays.toString(authorities));
                 }
             }
-
+    
         } catch (Exception e) {
             e.printStackTrace();
         }
