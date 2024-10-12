@@ -11,9 +11,9 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.detrasoft.authorization.infrastructure.services.JwtService;
 import com.detrasoft.framework.core.context.GenericContext;
 import com.detrasoft.framework.security.model.JwtPayload;
+import com.detrasoft.framework.security.services.JwtService;
 
 import io.jsonwebtoken.ExpiredJwtException;
 
