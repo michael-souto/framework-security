@@ -197,7 +197,7 @@ public class JwtService {
                     .firstName(firstName)
                     .lastName(lastName)
                     .detrasoftId(detrasoftId)
-                    .type(type)
+                    .type(type != null ? UserType.valueOf(type) : null)
                     .urlImg(urlImg)
                     .urlHome(urlHome)
                     .business(business)

@@ -23,7 +23,7 @@ public class JwtPayload implements UserDetails {
     private String password;
     private String firstName;
     private String lastName;
-    private String type;
+    private UserType type;
     private Long detrasoftId;
     private String urlImg;
     private String urlHome;
