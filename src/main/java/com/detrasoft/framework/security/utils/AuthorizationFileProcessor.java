@@ -92,20 +92,24 @@ public class AuthorizationFileProcessor {
         ArrayList<String> result = new ArrayList<String>();
         try {
             URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
+            String directoryPath = "/authorities/";
+            var resourceUrl = this.getClass().getResource(directoryPath);
 
-            if (uri.getScheme().equals("jar")) {
-                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
-                logger.info("Loading permissions by file JAR/WAR");
-                Path myPath = fileSystem.getPath("/BOOT-INF/classes/authorities/");
-                Stream<Path> walk = Files.walk(myPath, 1);
-                logger.info("Files searched:");
-                for (Iterator<Path> it = walk.iterator(); it.hasNext();) {
-                    String s = it.next().toString();
-                    logger.info(" - " + s);
-                    result.add(s);
+            if (resourceUrl == null) {
+                logger.warn("Diretório {} não encontrado no classpath.", directoryPath);
+                return result;
+            }
+
+            if (resourceUrl.getProtocol().equals("jar")) {
+                try (FileSystem fileSystem = FileSystems.newFileSystem(resourceUrl.toURI(), Collections.emptyMap())) {
+                    Path jarPath = fileSystem.getPath(directoryPath);
+                    try (Stream<Path> walk = Files.walk(jarPath, 1)) {
+                        walk.filter(Files::isRegularFile).forEach(path -> {
+                            logger.info(" - Encontrado arquivo: {}", path.getFileName());
+                            result.add(directoryPath + path.getFileName().toString());
+                        });
+                    }
                 }
-                walk.close();
-                result.remove(0);
             } else if (uri.getScheme().equals("war")) {
                 FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
                 logger.info("Loading permissions by file JAR/WAR");
