@@ -25,6 +25,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.stream.Stream;
 import java.util.Arrays;
+
 @Component
 public class AuthorizationFileProcessor {
 
@@ -33,20 +34,25 @@ public class AuthorizationFileProcessor {
     public void configureAuthoritiesFileConfig(AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authz) {
         try {
             for (String directory : getResourceFolderFiles()) {
-    
+
                 Properties props = new Properties();
                 URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-    
+
                 InputStream input;
-    
+
                 if (uri.getScheme().equals("jar")) {
-                    input = this.getClass().getResourceAsStream(directory);
+                    input = this.getClass().getResourceAsStream("/" + directory);
                 } else {
                     input = new FileInputStream(directory);
                 }
-    
+
+                if (input == null) {
+                    logger.error("Não foi possível carregar o arquivo de permissões: {}", directory);
+                    continue; // Pula para o próximo arquivo
+                }
+
                 props.load(input);
-    
+
                 for (String key : props.stringPropertyNames()) {
                     String[] keyParts = key.split("\\@");
                     if (keyParts.length != 2) {
@@ -55,15 +61,12 @@ public class AuthorizationFileProcessor {
                     }
                     String controllerMapping = keyParts[0];
                     String verbHttp = keyParts[1].toLowerCase();
-    
+
                     String authoritiesString = props.getProperty(key).trim();
-                    // Remove aspas simples e divide por vírgula
                     String[] authorities = authoritiesString.replaceAll("'", "").split("\\s*,\\s*");
-    
-                    // Construir o padrão de URL
+
                     String urlPattern = "/" + controllerMapping;
-    
-                    // Adicionar a autorização com base no método HTTP
+
                     switch (verbHttp) {
                         case "post" -> authz
                             .requestMatchers(HttpMethod.POST, urlPattern)
@@ -84,39 +87,36 @@ public class AuthorizationFileProcessor {
                     logger.info("Permissão adicionada [{}] {} com autoridades {}", verbHttp.toUpperCase(), urlPattern, Arrays.toString(authorities));
                 }
             }
-    
+
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Erro ao configurar permissões de autoridade: ", e);
         }
     }
 
     private ArrayList<String> getResourceFolderFiles() {
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<>();
         try {
             URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
 
             if (uri.getScheme().equals("jar")) {
                 logger.info("Loading permissions by file JAR");
-                // Obtemos o caminho do JAR
                 String directoryPath = "authorities/";
 
-                // Obtém o JAR como InputStream
                 try (InputStream jarStream = this.getClass().getProtectionDomain().getCodeSource().getLocation().openStream();
                      JarInputStream jarInputStream = new JarInputStream(jarStream)) {
-                    
+
                     JarEntry entry;
                     while ((entry = jarInputStream.getNextJarEntry()) != null) {
                         String entryName = entry.getName();
-        
-                        // Filtra os arquivos dentro do diretório authorities/
+
                         if (entryName.startsWith(directoryPath) && !entryName.endsWith("/")) {
                             logger.info(" - Encontrado arquivo: {}", entryName);
-                            result.add(entryName); // Salva o caminho relativo
+                            result.add(entryName);
                         }
                     }
                 }
             } else if (uri.getScheme().equals("war")) {
-                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
+                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
                 logger.info("Loading permissions by file WAR");
                 Path myPath = fileSystem.getPath("/WEB-INF/classes/authorities/");
                 Stream<Path> walk = Files.walk(myPath, 1);
@@ -142,7 +142,7 @@ public class AuthorizationFileProcessor {
             }
 
         } catch (URISyntaxException | IOException e) {
-            e.printStackTrace();
+            logger.error("Erro ao buscar arquivos de permissões: ", e);
         }
 
         return result;
