@@ -99,19 +99,19 @@ public class AuthorizationFileProcessor {
                 logger.info("Loading permissions by file JAR");
                 // Obtemos o caminho do JAR
                 String directoryPath = "authorities/";
-                URI jarUri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
 
-                // Abrimos o JAR como um stream
-                try (JarInputStream jarStream = new JarInputStream(Files.newInputStream(Path.of(jarUri)))) {
+                // Obtém o JAR como InputStream
+                try (InputStream jarStream = this.getClass().getProtectionDomain().getCodeSource().getLocation().openStream();
+                     JarInputStream jarInputStream = new JarInputStream(jarStream)) {
+                    
                     JarEntry entry;
-
-                    while ((entry = jarStream.getNextJarEntry()) != null) {
+                    while ((entry = jarInputStream.getNextJarEntry()) != null) {
                         String entryName = entry.getName();
-
-                        // Verifica se o arquivo está dentro da pasta "authorities/"
+        
+                        // Filtra os arquivos dentro do diretório authorities/
                         if (entryName.startsWith(directoryPath) && !entryName.endsWith("/")) {
                             logger.info(" - Encontrado arquivo: {}", entryName);
-                            result.add(entryName); // Adiciona o caminho completo do arquivo
+                            result.add(entryName); // Salva o caminho relativo
                         }
                     }
                 }
