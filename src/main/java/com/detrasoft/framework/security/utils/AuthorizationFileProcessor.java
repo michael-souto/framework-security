@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 import java.util.stream.Stream;
 import java.util.Arrays;
 @Component
@@ -92,27 +94,30 @@ public class AuthorizationFileProcessor {
         ArrayList<String> result = new ArrayList<String>();
         try {
             URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-            String directoryPath = "/authorities/";
-            var resourceUrl = this.getClass().getResource(directoryPath);
 
-            if (resourceUrl == null) {
-                logger.warn("Diretório {} não encontrado no classpath.", directoryPath);
-                return result;
-            }
+            if (uri.getScheme().equals("jar")) {
+                logger.info("Loading permissions by file JAR");
+                // Obtemos o caminho do JAR
+                String directoryPath = "authorities/";
+                URI jarUri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
 
-            if (resourceUrl.getProtocol().equals("jar")) {
-                try (FileSystem fileSystem = FileSystems.newFileSystem(resourceUrl.toURI(), Collections.emptyMap())) {
-                    Path jarPath = fileSystem.getPath(directoryPath);
-                    try (Stream<Path> walk = Files.walk(jarPath, 1)) {
-                        walk.filter(Files::isRegularFile).forEach(path -> {
-                            logger.info(" - Encontrado arquivo: {}", path.getFileName());
-                            result.add(directoryPath + path.getFileName().toString());
-                        });
+                // Abrimos o JAR como um stream
+                try (JarInputStream jarStream = new JarInputStream(Files.newInputStream(Path.of(jarUri)))) {
+                    JarEntry entry;
+
+                    while ((entry = jarStream.getNextJarEntry()) != null) {
+                        String entryName = entry.getName();
+
+                        // Verifica se o arquivo está dentro da pasta "authorities/"
+                        if (entryName.startsWith(directoryPath) && !entryName.endsWith("/")) {
+                            logger.info(" - Encontrado arquivo: {}", entryName);
+                            result.add(entryName); // Adiciona o caminho completo do arquivo
+                        }
                     }
                 }
             } else if (uri.getScheme().equals("war")) {
                 FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
-                logger.info("Loading permissions by file JAR/WAR");
+                logger.info("Loading permissions by file WAR");
                 Path myPath = fileSystem.getPath("/WEB-INF/classes/authorities/");
                 Stream<Path> walk = Files.walk(myPath, 1);
                 logger.info("Files searched:");
