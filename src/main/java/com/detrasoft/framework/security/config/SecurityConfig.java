@@ -36,6 +36,7 @@ public class SecurityConfig {
                         authz
                             .requestMatchers("/auth/**").permitAll()
                             .requestMatchers("/public/**").permitAll()
+                            .requestMatchers("/actuator/**").permitAll()
                             .requestMatchers("/h2-console/**").permitAll();
                         authorizationFileProcessor.configureAuthoritiesFileConfig(authz);
                         authz.anyRequest().authenticated();
