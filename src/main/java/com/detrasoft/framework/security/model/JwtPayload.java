@@ -28,5 +28,6 @@ public class JwtPayload implements UserDetails {
     private String urlImg;
     private String urlHome;
     private String business;
+    private String software;
     private SessionStatus status;
 }

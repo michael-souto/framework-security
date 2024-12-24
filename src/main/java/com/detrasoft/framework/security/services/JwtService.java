@@ -105,7 +105,7 @@ public class JwtService {
         return result;
     }
 
-    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId) {
+    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId, String software) {
         List<String> authorities = new ArrayList<String>();
 
         if (user.getType().equals(UserType.Admin)) {
@@ -126,6 +126,7 @@ public class JwtService {
                 .builder()
                 .subject(user.getUsername())
                 .claim("userId", user.getUserId())
+                .claim("tokenType", "ACCESS_TOKEN")
                 .claim("tokenId", tokenId)
                 .claim("firstName", user.getFirstName())
                 .claim("lastName", user.getLastName())
@@ -135,6 +136,7 @@ public class JwtService {
                 .claim("urlHome", user.getUrlHome())
                 .claim("business", user.getBusiness())
                 .claim("authorities", authorities)
+                .claim("software", software)
                 .claim("expiresIn", accessTokenExpire)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (accessTokenExpire * 1000)))
@@ -151,6 +153,7 @@ public class JwtService {
         String token = Jwts
             .builder()
             .subject(user.getUsername())
+            .claim("tokenType", "REFRESH_TOKEN")
             .claim("tokenId", tokenId)
             .claim("expiresIn", refreshTokenExpire)
             .issuedAt(new Date(System.currentTimeMillis()))
@@ -159,6 +162,49 @@ public class JwtService {
             .compact();
         Map<String, String> result = new HashMap<>();
         result.put("refreshToken", token);
+        result.put("tokenId", tokenId.toString());
+        return result;
+    }
+
+    public Map<String, String> generateNewPasswordToken(JwtPayload user, UUID tokenId) {
+        if (tokenId == null) {
+            tokenId = UUID.randomUUID();
+        }
+
+        String token = Jwts
+            .builder()
+            .subject(user.getUsername())
+            .claim("tokenType", "NEW_PASSWORD")
+            .claim("tokenId", tokenId)
+            .claim("expiresIn", 600)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + (600 * 1000)))
+            .signWith(getSigninKey())
+            .compact();
+        Map<String, String> result = new HashMap<>();
+        result.put("newPasswordToken", token);
+        result.put("tokenId", tokenId.toString());
+        return result;
+    }
+
+    public Map<String, String> generateValidationCodeToken(String userName, String code, UUID registerId) {
+        var tokenId = UUID.randomUUID();
+        
+        String token = Jwts
+            .builder()
+            .subject(userName)
+            .claim("tokenType", "VALIDATION_CODE")
+            .claim("tokenId", tokenId)
+            .claim("registerId", registerId)
+            .claim("code", code)
+            .claim("expiresIn", 600)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + (600 * 1000)))
+            .signWith(getSigninKey())
+            .compact();
+
+        Map<String, String> result = new HashMap<>();
+        result.put("validationCodeToken", token);
         result.put("tokenId", tokenId.toString());
         return result;
     }
@@ -189,6 +235,7 @@ public class JwtService {
             String urlImg = claims.get("urlImg", String.class);
             String urlHome = claims.get("urlHome", String.class);
             String business = claims.get("business", String.class);
+            String software = claims.get("software", String.class);
 
             JwtPayload user = JwtPayload.builder()
                     .userId(userId)
@@ -201,6 +248,7 @@ public class JwtService {
                     .urlImg(urlImg)
                     .urlHome(urlHome)
                     .business(business)
+                    .software(software)
                     .status(SessionStatus.LOGGED_IN)
                     .build();
     
