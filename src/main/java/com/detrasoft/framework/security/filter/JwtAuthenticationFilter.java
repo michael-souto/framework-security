@@ -62,6 +62,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
 
                     Map<String, Object> toke = (Map<String, Object>) jwtService.extractInfo(token);
+                    if (toke.get("sub") != null) {
+                        GenericContext.setContexts("userEmail", toke.get("sub").toString());
+                    }
                     if (toke.get("userId") != null) {
                         GenericContext.setContexts("userId", toke.get("userId").toString());
                     }
