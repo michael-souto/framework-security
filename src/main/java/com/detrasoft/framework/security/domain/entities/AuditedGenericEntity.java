@@ -1,5 +1,6 @@
 package com.detrasoft.framework.security.domain.entities;
 
+import com.detrasoft.framework.core.context.GenericContext;
 import com.detrasoft.framework.crud.entities.Audit;
 import com.detrasoft.framework.crud.entities.GenericEntity;
 import lombok.Getter;
@@ -24,7 +25,7 @@ public abstract class AuditedGenericEntity extends GenericEntity {
     public void prePersist() {
         audit.setCreatedAt(Instant.now());
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            audit.setUserCreated(SecurityContextHolder.getContext().getAuthentication().getName());
+            audit.setUserCreated(GenericContext.getContexts("userId").toString());
         } else {
             audit.setUserCreated("anonymousUser");
         }
@@ -34,7 +35,9 @@ public abstract class AuditedGenericEntity extends GenericEntity {
     public void preUpdate() {
         audit.setUpdatedAt(Instant.now());
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            audit.setUserUpdated(SecurityContextHolder.getContext().getAuthentication().getName());
+            audit.setUserUpdated(GenericContext.getContexts("userId").toString());
+        } else {
+            audit.setUserUpdated("anonymousUser");
         }
     }
 }

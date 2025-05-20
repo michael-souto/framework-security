@@ -74,11 +74,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (toke.get("detrasoftId") != null) {
                         GenericContext.setContexts("detrasoftId", toke.get("detrasoftId").toString());
                     }
+                    var fullName = "";
                     if (toke.get("firstName") != null) {
-                        GenericContext.setContexts("firstName", toke.get("firstName").toString());
+                        fullName = toke.get("firstName").toString();
                     }
                     if (toke.get("lastName") != null) {
-                        GenericContext.setContexts("lastName", toke.get("lastName").toString());
+                        fullName = fullName + " " + toke.get("lastName").toString();
+                    }
+                    if (fullName != null && !fullName.isBlank()) {
+                        GenericContext.setContexts("fullName", fullName);
                     }
                     if (toke.get("type") != null) {
                         GenericContext.setContexts("type", toke.get("type").toString());
