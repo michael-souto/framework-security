@@ -77,9 +77,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     var fullName = "";
                     if (toke.get("firstName") != null) {
                         fullName = toke.get("firstName").toString();
+                        GenericContext.setContexts("firstName", toke.get("firstName").toString());
                     }
                     if (toke.get("lastName") != null) {
                         fullName = fullName + " " + toke.get("lastName").toString();
+                        GenericContext.setContexts("lastName", toke.get("lastName").toString());
                     }
                     if (fullName != null && !fullName.isBlank()) {
                         GenericContext.setContexts("fullName", fullName);
