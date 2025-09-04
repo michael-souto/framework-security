@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import jakarta.persistence.Embedded;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import java.time.Instant;
@@ -21,6 +22,13 @@ public abstract class AuditedGenericEntity extends GenericEntity {
     @Embedded
     private com.detrasoft.framework.crud.entities.Audit audit = new Audit();
 
+    @PostLoad
+    public void onPostLoad() {
+        if (audit == null) {
+            audit = new Audit();
+        }
+    }
+    
     @PrePersist
     public void prePersist() {
         audit.setCreatedAt(Instant.now());
