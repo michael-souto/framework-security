@@ -36,7 +36,7 @@ public class JwtService {
     @Value("${application.security.jwt.refresh-token-expiration}")
     private long refreshTokenExpire;
 
-    @Value("${application.security.jwt.user-status-control-enabled:true}")
+    @Value("${application.security.jwt.user-status-control-enabled:false}")
     private boolean userStatusControlEnabled;
 
     public String extractUsername(String token) {
@@ -90,6 +90,8 @@ public class JwtService {
                 .getPayload();
     }
 
+    
+
     @SuppressWarnings("unchecked")
     public Map<String, Object> extractInfo(String token) {
         Claims claims = (Claims) Jwts
@@ -105,7 +107,7 @@ public class JwtService {
         return result;
     }
 
-    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId, String software) {
+    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId, String software, String subscription) {
         List<String> authorities = new ArrayList<String>();
 
         if (user.getType().equals(UserType.Admin)) {
@@ -135,8 +137,13 @@ public class JwtService {
                 .claim("urlImg", user.getUrlImg())
                 .claim("urlHome", user.getUrlHome())
                 .claim("business", user.getBusiness())
-                .claim("authorities", authorities)
-                .claim("software", software)
+                .claim("configs", 
+                user.getConfigs() != null ? user.getConfigs().stream().map(
+                    x -> Map.entry(x.getName(), x.getValue()) )
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)) : null)
+                    .claim("authorities", authorities)
+                    .claim("software", software)
+                    .claim("subscription", subscription)
                 .claim("expiresIn", accessTokenExpire)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (accessTokenExpire * 1000)))
@@ -149,12 +156,13 @@ public class JwtService {
         return result;
     }
 
-    public Map<String, String> generateRefreshToken(JwtPayload user, UUID tokenId) {
+    public Map<String, String> generateRefreshToken(JwtPayload user, UUID tokenId, String software) {
         String token = Jwts
             .builder()
             .subject(user.getUsername())
             .claim("tokenType", "REFRESH_TOKEN")
             .claim("tokenId", tokenId)
+            .claim("software", software)
             .claim("expiresIn", refreshTokenExpire)
             .issuedAt(new Date(System.currentTimeMillis()))
             .expiration(new Date(System.currentTimeMillis() + (refreshTokenExpire * 1000)))
@@ -236,6 +244,7 @@ public class JwtService {
             String urlHome = claims.get("urlHome", String.class);
             String business = claims.get("business", String.class);
             String software = claims.get("software", String.class);
+            String subscription = claims.get("subscription", String.class);
 
             JwtPayload user = JwtPayload.builder()
                     .userId(userId)
@@ -249,6 +258,7 @@ public class JwtService {
                     .urlHome(urlHome)
                     .business(business)
                     .software(software)
+                    .subscription(subscription)
                     .status(SessionStatus.LOGGED_IN)
                     .build();
     
