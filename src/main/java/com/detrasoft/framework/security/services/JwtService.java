@@ -137,13 +137,9 @@ public class JwtService {
                 .claim("urlImg", user.getUrlImg())
                 .claim("urlHome", user.getUrlHome())
                 .claim("business", user.getBusiness())
-                .claim("configs", 
-                user.getConfigs() != null ? user.getConfigs().stream().map(
-                    x -> Map.entry(x.getName(), x.getValue()) )
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)) : null)
-                    .claim("authorities", authorities)
-                    .claim("software", software)
-                    .claim("subscription", subscription)
+                .claim("authorities", authorities)
+                .claim("software", software)
+                .claim("subscription", subscription)
                 .claim("expiresIn", accessTokenExpire)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (accessTokenExpire * 1000)))
