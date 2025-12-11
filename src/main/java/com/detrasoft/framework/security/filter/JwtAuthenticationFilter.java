@@ -95,8 +95,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if (toke.get("software") != null) {
                         GenericContext.setContexts("software", toke.get("software").toString());
                     }
-                    if (toke.get("subscription") != null) {
-                        GenericContext.setContexts("subscription", toke.get("subscription").toString());
+                    if (toke.get("subscriptionSpeak") != null) {
+                        GenericContext.setContexts("subscriptionSpeak", toke.get("subscriptionSpeak").toString());
+                    }
+                    if (toke.get("subscriptionTask") != null) {
+                        GenericContext.setContexts("subscriptionTask", toke.get("subscriptionTask").toString());
+                    }
+                    if (toke.get("language") != null) {
+                        GenericContext.setContexts("language", toke.get("language").toString());
                     }
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
