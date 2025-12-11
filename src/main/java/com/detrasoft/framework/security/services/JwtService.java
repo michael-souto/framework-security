@@ -107,7 +107,7 @@ public class JwtService {
         return result;
     }
 
-    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId, String software, String subscription) {
+    public Map<String, String> generateAccessToken(JwtPayload user, UUID tokenId, String software, String subscriptionSpeak, String subscriptionTask) {
         List<String> authorities = new ArrayList<String>();
 
         if (user.getType().equals(UserType.Admin)) {
@@ -137,9 +137,10 @@ public class JwtService {
                 .claim("urlImg", user.getUrlImg())
                 .claim("urlHome", user.getUrlHome())
                 .claim("business", user.getBusiness())
-                .claim("authorities", authorities)
                 .claim("software", software)
-                .claim("subscription", subscription)
+                .claim("subscriptionSpeak", subscriptionSpeak)
+                .claim("subscriptionTask", subscriptionTask)
+                .claim("language", user.getLanguage())
                 .claim("expiresIn", accessTokenExpire)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (accessTokenExpire * 1000)))
@@ -240,7 +241,9 @@ public class JwtService {
             String urlHome = claims.get("urlHome", String.class);
             String business = claims.get("business", String.class);
             String software = claims.get("software", String.class);
-            String subscription = claims.get("subscription", String.class);
+            String subscriptionSpeak = claims.get("subscriptionSpeak", String.class);
+            String subscriptionTask = claims.get("subscriptionTask", String.class);
+            String language = claims.get("language", String.class);
 
             JwtPayload user = JwtPayload.builder()
                     .userId(userId)
@@ -254,7 +257,9 @@ public class JwtService {
                     .urlHome(urlHome)
                     .business(business)
                     .software(software)
-                    .subscription(subscription)
+                    .subscriptionSpeak(subscriptionSpeak)
+                    .subscriptionTask(subscriptionTask)
+                    .language(language)
                     .status(SessionStatus.LOGGED_IN)
                     .build();
     
@@ -265,3 +270,4 @@ public class JwtService {
         }
     }
 }
+

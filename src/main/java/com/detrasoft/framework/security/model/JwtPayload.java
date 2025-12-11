@@ -29,6 +29,8 @@ public class JwtPayload implements UserDetails {
     private String urlHome;
     private String business;
     private String software;
-    private String subscription;
+    private String subscriptionSpeak;
+    private String subscriptionTask;
+    private String language;
     private SessionStatus status;
 }
