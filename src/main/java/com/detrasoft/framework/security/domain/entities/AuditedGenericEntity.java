@@ -33,7 +33,8 @@ public abstract class AuditedGenericEntity extends GenericEntity {
     public void prePersist() {
         audit.setCreatedAt(Instant.now());
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            audit.setUserCreated(GenericContext.getContexts("userId").toString());
+            Object userId = GenericContext.getContexts("userId");
+            audit.setUserCreated(userId != null ? userId.toString() : "systemUser");
         } else {
             audit.setUserCreated("anonymousUser");
         }
@@ -43,7 +44,8 @@ public abstract class AuditedGenericEntity extends GenericEntity {
     public void preUpdate() {
         audit.setUpdatedAt(Instant.now());
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            audit.setUserUpdated(GenericContext.getContexts("userId").toString());
+            Object userId = GenericContext.getContexts("userId");
+            audit.setUserUpdated(userId != null ? userId.toString() : "systemUser");
         } else {
             audit.setUserUpdated("anonymousUser");
         }
