@@ -32,5 +32,6 @@ public class JwtPayload implements UserDetails {
     private String subscriptionSpeak;
     private String subscriptionTask;
     private String language;
+    private String timezoneOffset;
     private SessionStatus status;
 }

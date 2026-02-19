@@ -130,6 +130,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     } else {
                         GenericContext.setContexts("language", null);
                     }
+                    if (toke.get("timezoneOffset") != null) {
+                        GenericContext.setContexts("timezoneOffset", toke.get("timezoneOffset").toString());
+                    } else {
+                        GenericContext.setContexts("timezoneOffset", null);
+                    }
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }

@@ -141,6 +141,7 @@ public class JwtService {
                 .claim("subscriptionSpeak", subscriptionSpeak)
                 .claim("subscriptionTask", subscriptionTask)
                 .claim("language", user.getLanguage())
+                .claim("timezoneOffset", user.getTimezoneOffset())
                 .claim("expiresIn", accessTokenExpire)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (accessTokenExpire * 1000)))
@@ -244,6 +245,7 @@ public class JwtService {
             String subscriptionSpeak = claims.get("subscriptionSpeak", String.class);
             String subscriptionTask = claims.get("subscriptionTask", String.class);
             String language = claims.get("language", String.class);
+            String timezoneOffset = claims.get("timezoneOffset", String.class);
 
             JwtPayload user = JwtPayload.builder()
                     .userId(userId)
@@ -260,6 +262,7 @@ public class JwtService {
                     .subscriptionSpeak(subscriptionSpeak)
                     .subscriptionTask(subscriptionTask)
                     .language(language)
+                    .timezoneOffset(timezoneOffset)
                     .status(SessionStatus.LOGGED_IN)
                     .build();
     
