@@ -64,45 +64,71 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Map<String, Object> toke = (Map<String, Object>) jwtService.extractInfo(token);
                     if (toke.get("sub") != null) {
                         GenericContext.setContexts("userEmail", toke.get("sub").toString());
+                    } else {
+                        GenericContext.setContexts("userEmail", null);
                     }
                     if (toke.get("userId") != null) {
                         GenericContext.setContexts("userId", toke.get("userId").toString());
+                    } else {
+                        GenericContext.setContexts("userId", null);
                     }
                     if (toke.get("tokenId") != null) {
                         GenericContext.setContexts("tokenId", toke.get("tokenId").toString());
+                    } else {
+                        GenericContext.setContexts("tokenId", null);
                     }
                     if (toke.get("detrasoftId") != null) {
                         GenericContext.setContexts("detrasoftId", toke.get("detrasoftId").toString());
+                    } else {
+                        GenericContext.setContexts("detrasoftId", null);
                     }
                     var fullName = "";
                     if (toke.get("firstName") != null) {
                         fullName = toke.get("firstName").toString();
                         GenericContext.setContexts("firstName", toke.get("firstName").toString());
+                    } else {
+                        GenericContext.setContexts("firstName", null);
                     }
                     if (toke.get("lastName") != null) {
                         fullName = fullName + " " + toke.get("lastName").toString();
                         GenericContext.setContexts("lastName", toke.get("lastName").toString());
+                    } else {
+                        GenericContext.setContexts("lastName", null);
                     }
                     if (fullName != null && !fullName.isBlank()) {
                         GenericContext.setContexts("fullName", fullName);
+                    } else {
+                        GenericContext.setContexts("fullName", null);
                     }
                     if (toke.get("type") != null) {
                         GenericContext.setContexts("type", toke.get("type").toString());
+                    } else {
+                        GenericContext.setContexts("type", null);
                     }
                     if (toke.get("business") != null) {
                         GenericContext.setContexts("business", toke.get("business").toString());
+                    } else {
+                        GenericContext.setContexts("business", null);
                     }
                     if (toke.get("software") != null) {
                         GenericContext.setContexts("software", toke.get("software").toString());
+                    } else {
+                        GenericContext.setContexts("software", null);
                     }
                     if (toke.get("subscriptionSpeak") != null) {
                         GenericContext.setContexts("subscriptionSpeak", toke.get("subscriptionSpeak").toString());
+                    } else {
+                        GenericContext.setContexts("subscriptionSpeak", null);
                     }
                     if (toke.get("subscriptionTask") != null) {
                         GenericContext.setContexts("subscriptionTask", toke.get("subscriptionTask").toString());
+                    } else {
+                        GenericContext.setContexts("subscriptionTask", null);
                     }
                     if (toke.get("language") != null) {
                         GenericContext.setContexts("language", toke.get("language").toString());
+                    } else {
+                        GenericContext.setContexts("language", null);
                     }
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
