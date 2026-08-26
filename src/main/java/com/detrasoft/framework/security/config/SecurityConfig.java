@@ -21,8 +21,7 @@ public class SecurityConfig {
     private final AuthorizationFileProcessor authorizationFileProcessor;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          AuthorizationFileProcessor authorizationFileProcessor
-                          ) {
+            AuthorizationFileProcessor authorizationFileProcessor) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.authorizationFileProcessor = authorizationFileProcessor;
     }
@@ -33,22 +32,21 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> {
-                        authz
+                    authz
                             .requestMatchers("/auth/**").permitAll()
                             .requestMatchers("/public/**").permitAll()
                             .requestMatchers("/actuator/**").permitAll()
-                            .requestMatchers("/h2-console/**").permitAll();
-                        authorizationFileProcessor.configureAuthoritiesFileConfig(authz);
-                        authz.anyRequest().authenticated();
-                    }
-                )
-                .sessionManagement(session->session
+                            .requestMatchers("/h2-console/**").permitAll()
+                            .requestMatchers("/ws/**").permitAll();
+                    authorizationFileProcessor.configureAuthoritiesFileConfig(authz);
+                    authz.anyRequest().authenticated();
+                })
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(
-                        e->e.accessDeniedHandler(
-                                        (request, response, accessDeniedException)->response.setStatus(403)
-                                )
+                        e -> e.accessDeniedHandler(
+                                (request, response, accessDeniedException) -> response.setStatus(403))
                                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .build();
 
