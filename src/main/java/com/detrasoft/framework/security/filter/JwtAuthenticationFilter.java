@@ -15,13 +15,24 @@ import com.detrasoft.framework.core.context.GenericContext;
 import com.detrasoft.framework.security.model.JwtPayload;
 import com.detrasoft.framework.security.services.JwtService;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 
 import java.io.IOException;
-import java.util.Map;
 
+/**
+ * Autentica a requisicao a partir do access token.
+ *
+ * O parse acontece UMA vez por requisicao (`parseClaims`) e o JwtPayload e o
+ * GenericContext derivam dessas mesmas claims. Antes cada campo lido disparava
+ * um parse completo com nova verificacao de assinatura -- e o GenericContext era
+ * populado a partir de um segundo parse independente, que podia divergir do
+ * primeiro.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String ACCESS_TOKEN = "ACCESS_TOKEN";
 
     private final JwtService jwtService;
 
@@ -46,104 +57,83 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            String username = jwtService.extractUsername(token);
-
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-                JwtPayload userDetails = jwtService.decodeTokenToUserDetails(token);
-
-                if (jwtService.isValid(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
-                    );
-
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
-                    Map<String, Object> toke = (Map<String, Object>) jwtService.extractInfo(token);
-                    if (toke.get("sub") != null) {
-                        GenericContext.setContexts("userEmail", toke.get("sub").toString());
-                    } else {
-                        GenericContext.setContexts("userEmail", null);
-                    }
-                    if (toke.get("userId") != null) {
-                        GenericContext.setContexts("userId", toke.get("userId").toString());
-                    } else {
-                        GenericContext.setContexts("userId", null);
-                    }
-                    if (toke.get("tokenId") != null) {
-                        GenericContext.setContexts("tokenId", toke.get("tokenId").toString());
-                    } else {
-                        GenericContext.setContexts("tokenId", null);
-                    }
-                    if (toke.get("detrasoftId") != null) {
-                        GenericContext.setContexts("detrasoftId", toke.get("detrasoftId").toString());
-                    } else {
-                        GenericContext.setContexts("detrasoftId", null);
-                    }
-                    var fullName = "";
-                    if (toke.get("firstName") != null) {
-                        fullName = toke.get("firstName").toString();
-                        GenericContext.setContexts("firstName", toke.get("firstName").toString());
-                    } else {
-                        GenericContext.setContexts("firstName", null);
-                    }
-                    if (toke.get("lastName") != null) {
-                        fullName = fullName + " " + toke.get("lastName").toString();
-                        GenericContext.setContexts("lastName", toke.get("lastName").toString());
-                    } else {
-                        GenericContext.setContexts("lastName", null);
-                    }
-                    if (fullName != null && !fullName.isBlank()) {
-                        GenericContext.setContexts("fullName", fullName);
-                    } else {
-                        GenericContext.setContexts("fullName", null);
-                    }
-                    if (toke.get("type") != null) {
-                        GenericContext.setContexts("type", toke.get("type").toString());
-                    } else {
-                        GenericContext.setContexts("type", null);
-                    }
-                    if (toke.get("business") != null) {
-                        GenericContext.setContexts("business", toke.get("business").toString());
-                    } else {
-                        GenericContext.setContexts("business", null);
-                    }
-                    if (toke.get("software") != null) {
-                        GenericContext.setContexts("software", toke.get("software").toString());
-                    } else {
-                        GenericContext.setContexts("software", null);
-                    }
-                    if (toke.get("subscriptionSpeak") != null) {
-                        GenericContext.setContexts("subscriptionSpeak", toke.get("subscriptionSpeak").toString());
-                    } else {
-                        GenericContext.setContexts("subscriptionSpeak", null);
-                    }
-                    if (toke.get("subscriptionTask") != null) {
-                        GenericContext.setContexts("subscriptionTask", toke.get("subscriptionTask").toString());
-                    } else {
-                        GenericContext.setContexts("subscriptionTask", null);
-                    }
-                    if (toke.get("language") != null) {
-                        GenericContext.setContexts("language", toke.get("language").toString());
-                    } else {
-                        GenericContext.setContexts("language", null);
-                    }
-                    if (toke.get("timezoneOffset") != null) {
-                        GenericContext.setContexts("timezoneOffset", toke.get("timezoneOffset").toString());
-                    } else {
-                        GenericContext.setContexts("timezoneOffset", null);
-                    }
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                authenticate(token, request);
             }
-
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException ex) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{ \"error\": \"Token expirado. Por favor, faça login novamente.\" }");
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
+            // Token invalido nao autentica -- e nao derruba a cadeia: o mesmo
+            // contexto responde 401/403 nos endpoints protegidos. Sem este catch
+            // uma assinatura invalida viraria 500, o que confunde diagnostico e
+            // expoe a stack trace de parsing na resposta.
+            filterChain.doFilter(request, response);
         }
+    }
+
+    private void authenticate(String token, HttpServletRequest request) {
+        // Um unico parse (e uma unica verificacao de assinatura) por requisicao.
+        Claims claims = jwtService.parseClaims(token);
+
+        // Apenas tokens de acesso autenticam. Sem esta checagem um refresh token
+        // (7 dias) ou um token de reset de senha valia como credencial de acesso.
+        if (!ACCESS_TOKEN.equals(claims.get("tokenType", String.class))) {
+            return;
+        }
+
+        String username = claims.getSubject();
+        if (username == null) {
+            return;
+        }
+
+        if (!jwtService.issuerAndAudienceValid(claims)) {
+            return;
+        }
+
+        JwtPayload userDetails = jwtService.toJwtPayload(claims);
+
+        if (!jwtService.isValid(token, userDetails)) {
+            return;
+        }
+
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        populateContext(claims);
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+    }
+
+    /** Popula o GenericContext com as MESMAS claims ja verificadas. */
+    private void populateContext(Claims claims) {
+        GenericContext.setContexts("userEmail", claims.getSubject());
+        GenericContext.setContexts("userId", asString(claims.get("userId")));
+        GenericContext.setContexts("tokenId", asString(claims.get("tokenId")));
+        GenericContext.setContexts("detrasoftId", asString(claims.get("detrasoftId")));
+
+        String firstName = asString(claims.get("firstName"));
+        String lastName = asString(claims.get("lastName"));
+        GenericContext.setContexts("firstName", firstName);
+        GenericContext.setContexts("lastName", lastName);
+        String fullName = firstName == null ? "" : firstName;
+        if (lastName != null) {
+            fullName = fullName + " " + lastName;
+        }
+        GenericContext.setContexts("fullName", fullName.isBlank() ? null : fullName);
+
+        GenericContext.setContexts("type", asString(claims.get("type")));
+        GenericContext.setContexts("business", asString(claims.get("business")));
+        GenericContext.setContexts("software", asString(claims.get("software")));
+        GenericContext.setContexts("subscriptionSpeak", asString(claims.get("subscriptionSpeak")));
+        GenericContext.setContexts("subscriptionTask", asString(claims.get("subscriptionTask")));
+        GenericContext.setContexts("language", asString(claims.get("language")));
+        GenericContext.setContexts("timezoneOffset", asString(claims.get("timezoneOffset")));
+    }
+
+    private String asString(Object value) {
+        return value == null ? null : value.toString();
     }
 }

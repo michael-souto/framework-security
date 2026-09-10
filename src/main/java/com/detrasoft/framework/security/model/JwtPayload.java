@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.detrasoft.framework.security.dtos.UserConfigDTO;
+import com.detrasoft.framework.security.dtos.UserFavoriteDTO;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,4 +37,6 @@ public class JwtPayload implements UserDetails {
     private String language;
     private String timezoneOffset;
     private SessionStatus status;
+    private List<UserFavoriteDTO> favorites;
+    private List<UserConfigDTO> configs;
 }
