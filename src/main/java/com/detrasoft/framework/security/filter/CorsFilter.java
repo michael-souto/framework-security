@@ -44,6 +44,7 @@ public class CorsFilter implements Filter {
 
             response.setHeader("Access-Control-Allow-Origin", AccessControlAllowOrigin);
             response.setHeader("Access-Control-Allow-Credentials", "true");
+            response.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Disposition, Content-Type");
             addSameSiteAttribute(response);
 
             if ("OPTIONS".equals(request.getMethod())
@@ -51,6 +52,7 @@ public class CorsFilter implements Filter {
                     || allowedOrigin.equals("*"))) {
                 response.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, PUT, PATCH, OPTIONS");
                 response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept, Device-Id");
+                response.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Disposition, Content-Type");
                 response.setHeader("Access-Control-Max-Age", "3600");
 
                 response.setStatus(HttpServletResponse.SC_OK);
