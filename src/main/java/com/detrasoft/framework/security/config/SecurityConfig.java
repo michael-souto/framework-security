@@ -14,7 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.detrasoft.framework.security.filter.JwtAuthenticationFilter;
 import com.detrasoft.framework.security.utils.AuthorizationFileProcessor;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
