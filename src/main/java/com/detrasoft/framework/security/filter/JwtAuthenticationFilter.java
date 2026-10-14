@@ -46,6 +46,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
+        try {
+            doAuthenticate(request, response, filterChain);
+        } finally {
+            // O GenericContext e ThreadLocal e a thread volta ao pool do Tomcat:
+            // limpar aqui impede que a proxima requisicao (inclusive anonima)
+            // herde detrasoftId/userId do usuario anterior.
+            GenericContext.clear();
+        }
+    }
+
+    private void doAuthenticate(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
